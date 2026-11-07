@@ -19,24 +19,27 @@ const BOT_TOKEN = process.env.BOT_TOKEN || '9132364177:AAEID1FJHBUJPPMEslYbgTZw0
 const ADMIN_USERNAME = 'AlHaideri11';
 const ENV_ADMIN_ID = String(process.env.ADMIN_ID || '');
 const CURRENCY = 'USD';
+const REFERRAL_REWARD = 0.05; // مكافأة الدعوة: 0.05 دولار لكل شخص جديد
 
 const bot = new Telegraf(BOT_TOKEN);
-const DB_FILE = path.join(__dirname, 'store_db.json');
+// استخدام ملف قاعدة بيانات جديد ونظيف لمنع تداخل أي منتجات قديمة
+const DB_FILE = path.join(__dirname, 'shamel_v2_db.json');
 
-// ==================== 3. البيانات الشجرية للأقسام والدول والخدمات ====================
+// ==================== 3. البيانات الشجرية للأقسام الأربعة ====================
 
+// أولاً: تطبيقات ومواقع قسم التفعيل (SMS - Email)
 const APPS_LIST = {
-  wa: { name: 'واتساب (WhatsApp)', icon: '🟢' },
-  tg: { name: 'تيليجرام (Telegram)', icon: '✈️' },
-  imo: { name: 'إيمو (imo)', icon: '🔵' },
-  sc: { name: 'سناب شات (Snapchat)', icon: '👻' },
-  tk: { name: 'تيك توك (TikTok)', icon: '🎵' },
-  fb: { name: 'فيسبوك (Facebook)', icon: '📘' },
-  ig: { name: 'انستقرام (Instagram)', icon: '📸' },
-  em: { name: 'بريد إلكتروني (Email / Gmail)', icon: '📧' }
+  wa: { name: 'حسابات واتساب (WhatsApp)', icon: '🟢' },
+  tg: { name: 'حسابات تيليجرام (Telegram)', icon: '✈️' },
+  imo: { name: 'حسابات إيمو (imo)', icon: '🔵' },
+  sc: { name: 'حسابات سناب شات (Snapchat)', icon: '👻' },
+  tk: { name: 'حسابات تيك توك (TikTok)', icon: '🎵' },
+  fb: { name: 'حسابات فيسبوك (Facebook)', icon: '📘' },
+  ig: { name: 'حسابات انستقرام (Instagram)', icon: '📸' },
+  em: { name: 'حسابات بالبريد الإلكتروني (Email)', icon: '📧' }
 };
 
-// قائمة دول العالم مع أعلامها ومفاتيحها وأسعارها الافتراضية
+// قائمة دول العالم مع أعلامها ومفاتيحها وأسعارها
 const COUNTRIES = [
   { code: 'ye', name: 'اليمن', flag: '🇾🇪', dial: '+967', price: 1.50 },
   { code: 'sa', name: 'السعودية', flag: '🇸🇦', dial: '+966', price: 2.00 },
@@ -96,112 +99,109 @@ const COUNTRIES = [
   { code: 'au', name: 'أستراليا', flag: '🇦🇺', dial: '+61', price: 1.70 }
 ];
 
-// منصات وخدمات الرشق
+// ثانياً: منصات وخدمات قسم الرشق وزيادة المتابعين
 const SMM_PLATFORMS = {
   tg: {
     name: 'تيليجرام (Telegram)', icon: '✈️',
     services: [
-      { id: 'tg_m1', name: '👥 رشق 1,000 عضو للقنوات والمجموعات', price: 1.80 },
-      { id: 'tg_v1', name: '👁️ رشق 5,000 مشاهدة لمنشورات القناة', price: 0.80 },
-      { id: 'tg_r1', name: '👍 رشق 1,000 تفاعل إيجابي على المنشورات', price: 1.20 }
+      { id: 'tg_m1', name: '👥 زيادة 1,000 عضو للقنوات والمجموعات', price: 1.80 },
+      { id: 'tg_v1', name: '👁️ زيادة 5,000 مشاهدة لمنشورات القناة', price: 0.80 },
+      { id: 'tg_r1', name: '👍 زيادة 1,000 تفاعل على المنشورات', price: 1.20 }
+    ]
+  },
+  wa: {
+    name: 'قنوات واتساب (WhatsApp)', icon: '🟢',
+    services: [
+      { id: 'wa_f1', name: '👥 زيادة 1,000 متابع لقناة واتساب', price: 2.50 },
+      { id: 'wa_r1', name: '👍 زيادة 1,000 تفاعل لمنشورات القناة', price: 1.50 }
     ]
   },
   tk: {
     name: 'تيك توك (TikTok)', icon: '🎵',
     services: [
-      { id: 'tk_f1', name: '👥 زيادة 1,000 متابع حقيقي متفاعل', price: 2.00 },
-      { id: 'tk_l1', name: '❤️ زيادة 1,000 إعجاب (لايك) للفيديو', price: 1.00 },
-      { id: 'tk_v1', name: '▶️ زيادة 10,000 مشاهدة فيديو فورية', price: 0.90 }
+      { id: 'tk_f1', name: '👥 زيادة 1,000 متابع للحساب', price: 2.00 },
+      { id: 'tk_l1', name: '❤️ زيادة 1,000 إعجاب للفيديوهات', price: 1.00 },
+      { id: 'tk_v1', name: '▶️ زيادة 10,000 مشاهدة فيديو', price: 0.90 }
     ]
   },
   ig: {
     name: 'انستقرام (Instagram)', icon: '📸',
     services: [
-      { id: 'ig_f1', name: '👥 زيادة 1,000 متابع بضمان عدم النقصان', price: 1.80 },
-      { id: 'ig_l1', name: '❤️ زيادة 1,000 إعجاب للمنشورات والريلز', price: 0.90 },
-      { id: 'ig_v1', name: '🎬 زيادة 5,000 مشاهدة ستوري أو ريلز', price: 1.00 }
+      { id: 'ig_f1', name: '👥 زيادة 1,000 متابع للحساب', price: 1.80 },
+      { id: 'ig_l1', name: '❤️ زيادة 1,000 إعجاب للمنشورات', price: 0.90 },
+      { id: 'ig_v1', name: '🎬 زيادة 5,000 مشاهدة ريلز أو ستوري', price: 1.00 }
     ]
   },
   fb: {
     name: 'فيسبوك (Facebook)', icon: '📘',
     services: [
       { id: 'fb_f1', name: '👥 زيادة 1,000 متابع للصفحات والحسابات', price: 2.00 },
-      { id: 'fb_l1', name: '👍 زيادة 1,000 إعجاب وتفاعل للمنشورات', price: 1.20 }
+      { id: 'fb_l1', name: '👍 زيادة 1,000 إعجاب للمنشورات', price: 1.20 }
+    ]
+  },
+  sc: {
+    name: 'سناب شات (Snapchat)', icon: '👻',
+    services: [
+      { id: 'sc_f1', name: '👥 زيادة 1,000 متابع للملف التعريفي', price: 3.00 },
+      { id: 'sc_v1', name: '🔥 زيادة مشاهدات القصص والأضواء', price: 2.00 }
     ]
   },
   yt: {
     name: 'يوتيوب (YouTube)', icon: '▶️',
     services: [
       { id: 'yt_s1', name: '🔔 زيادة 1,000 مشترك للقناة', price: 3.50 },
-      { id: 'yt_v1', name: '👁️ زيادة 2,000 مشاهدة فيديو عالية الجودة', price: 2.20 }
-    ]
-  },
-  sc: {
-    name: 'سناب شات (Snapchat)', icon: '👻',
-    services: [
-      { id: 'sc_f1', name: '👥 زيادة 1,000 متابع ملف تعريفي', price: 3.00 },
-      { id: 'sc_v1', name: '🔥 زيادة مشاهدات الأضواء والقصص', price: 2.00 }
-    ]
-  },
-  tw: {
-    name: 'منصة إكس / تويتر (X)', icon: '🐦',
-    services: [
-      { id: 'tw_f1', name: '👥 زيادة 1,000 متابع لحسابك', price: 2.50 },
-      { id: 'tw_r1', name: '🔁 زيادة 1,000 إعادة تغريد وإعجاب', price: 1.50 }
+      { id: 'yt_v1', name: '👁️ زيادة 2,000 مشاهدة للفيديوهات', price: 2.20 }
     ]
   }
 };
 
-// قوائم العملات الرقمية والنقدية
+// ثالثاً: قوائم قسم المصارف وتحويل العملات (الرقمية والنقدية)
 const CRYPTO_CURRENCIES = [
   { id: 'usdt_trc20', name: '💎 عملة USDT (شبكة TRC20)' },
-  { id: 'usdt_bep20', name: '💛 عملة USDT (شبكة BEP20 / Binance)' },
-  { id: 'btc', name: '🪙 عملة بيتكوين (Bitcoin - BTC)' },
-  { id: 'eth', name: '💠 عملة إيثيريوم (Ethereum - ETH)' },
-  { id: 'bnb', name: '🔶 عملة بينانس كوين (BNB)' },
+  { id: 'usdt_bep20', name: '💛 عملة USDT (شبكة BEP20 - Binance)' },
+  { id: 'btc', name: '🪙 عملة البيتكوين (Bitcoin - BTC)' },
+  { id: 'eth', name: '💠 عملة الإيثيريوم (Ethereum - ETH)' },
+  { id: 'bnb', name: '🔶 عملة بينانس (BNB)' },
   { id: 'trx', name: '🔴 عملة ترون (Tron - TRX)' },
   { id: 'ton', name: '💎 عملة تون كوين (Toncoin - TON)' }
 ];
 
 const FIAT_CURRENCIES = [
-  { id: 'yer', name: '🇾🇪 الريال اليمني (صنعاء / عدن - كافة المحافظ والبنوك)' },
-  { id: 'sar', name: '🇸🇦 الريال السعودي (راجحي / أهلي / STC Pay)' },
-  { id: 'usd', name: '🇺🇸 الدولار الأمريكي (حوالات / نقد)' },
-  { id: 'aed', name: '🇦🇪 الدرهم الإماراتي (تحويل بنكي / صرافة)' },
-  { id: 'egp', name: '🇪🇬 الجنيه المصري (فودافون كاش / انستا باي)' },
+  { id: 'yer', name: '🇾🇪 الريال اليمني (كافة المحافظ والبنوك المحلية)' },
+  { id: 'sar', name: '🇸🇦 الريال السعودي (تحويل بنكي / محافظ)' },
+  { id: 'usd', name: '🇺🇸 الدولار الأمريكي (حوالات واستلام نقدي)' },
+  { id: 'aed', name: '🇦🇪 الدرهم الإماراتي (تحويل ومصارفة)' },
+  { id: 'egp', name: '🇪🇬 الجنيه المصري (تحويل ومحافظ إلكترونية)' },
   { id: 'payeer', name: '🅿️ بنك بايير الإلكتروني (Payeer)' },
-  { id: 'paypal', name: '💳 بنك بايبال العالمي (PayPal)' },
-  { id: 'wise', name: '🌐 بنك وايز وحوالات ويسترن يونيون (Wise / WU)' }
+  { id: 'paypal', name: '💳 بنك بايبال الإلكتروني (PayPal)' },
+  { id: 'wise', name: '🌐 بنك وايز والحوالات الدولية (Wise / WU)' }
 ];
 
-// المنتجات الرقمية والتعاقدات (شراء وبيع)
+// رابعاً: قوائم قسم المنتجات الرقمية والتعاقدات (شراء وبيع)
 const DIGITAL_BUY_ITEMS = [
-  { id: 'db_1', name: '🎨 اشتراكات بريميوم (Canva Pro / ChatGPT Plus / Adobe)', price: 3.00 },
-  { id: 'db_2', name: '🎬 اشتراكات ترفيهية (Netflix / Shahid VIP / OSN)', price: 2.50 },
-  { id: 'db_3', name: '🎮 بطاقات ألعاب وشحن (PUBG / FreeFire / iTunes / Google Play)', price: 5.00 },
-  { id: 'db_4', name: '📱 شراء حسابات مواقع تواصل جاهزة وقديمة', price: 4.00 },
-  { id: 'db_5', name: '🤖 برمجة وتطوير بوتات تيليجرام والأنظمة الرقمية', price: 15.00 },
-  { id: 'db_6', name: '🤝 طلب وساطة تجارية أو إبرام عقد عمل رسمي مضمون', price: 5.00 }
+  { id: 'db_1', name: '📱 شراء حسابات مواقع تواصل جاهزة ومفعلة', price: 3.00 },
+  { id: 'db_2', name: '📢 شراء قنوات ومجموعات جاهزة بمختلف المنصات', price: 5.00 },
+  { id: 'db_3', name: '🔑 شراء أكواد وتراخيص واشتراكات رقمية', price: 2.50 },
+  { id: 'db_4', name: '🤖 طلب برمجة وتطوير بوتات وأنظمة رقمية', price: 10.00 },
+  { id: 'db_5', name: '🤝 طلب وساطة تجارية أو إبرام عقد عمل رسمي', price: 5.00 }
 ];
 
 const DIGITAL_SELL_ITEMS = [
-  { id: 'ds_1', name: '📲 بيع حسابات وقنوات ومجموعات (تيليجرام / تيك توك / انستا)' },
-  { id: 'ds_2', name: '🔑 بيع أكواد وتراخيص برامج وبطاقات رقمية بالجملة' },
-  { id: 'ds_3', name: '💼 عرض خدماتك المهنية أو البرمجية للتعاقد عبر المنصة' },
-  { id: 'ds_4', name: '📄 توثيق صفقة بيع رقمية بضمان ووساطة الإدارة' }
+  { id: 'ds_1', name: '📲 بيع حسابات مواقع تواصل اجتماعي جاهزة' },
+  { id: 'ds_2', name: '📢 بيع قنوات أو مجموعات جاهزة (تيليجرام وغيرها)' },
+  { id: 'ds_3', name: '🔑 بيع أكواد وتراخيص ومنتجات رقمية' },
+  { id: 'ds_4', name: '📄 توثيق صفقة بيع أو تعاقد بضمان ووساطة الإدارة' }
 ];
 
 // ==================== 4. قاعدة البيانات ====================
 function initialDB() {
   return {
     adminId: ENV_ADMIN_ID || null,
-    autoGenerateNumbers: false, // إذا كانت false يظهر "لا يوجد رقم حالياً" ما لم يوجد في المخزون، وإذا true يولد أرقاماً فورية
-    numberStock: {}, // مخزون أرقام حقيقية بصيغة: "wa_ye": ["+96777...", ...]
+    autoGenerateNumbers: false,
+    numberStock: {},
     users: {},
-    products: [],
     orders: [],
     topups: [],
-    nextProductId: 1,
     nextOrderId: 1001,
     nextTopupId: 101
   };
@@ -265,12 +265,17 @@ function getUser(ctx) {
       name: ctx.from.first_name || 'عميلنا العزيز',
       username: ctx.from.username || '',
       balance: 0,
+      invitedCount: 0,
+      referralEarnings: 0,
+      referredBy: null,
       createdAt: new Date().toISOString()
     };
     saveDB();
   } else {
     db.users[id].name = ctx.from.first_name || db.users[id].name;
     db.users[id].username = ctx.from.username || db.users[id].username;
+    if (typeof db.users[id].invitedCount !== 'number') db.users[id].invitedCount = 0;
+    if (typeof db.users[id].referralEarnings !== 'number') db.users[id].referralEarnings = 0;
   }
   return db.users[id];
 }
@@ -297,22 +302,23 @@ const setSession = (id, data) => sessions.set(String(id), data);
 const getSession = (id) => sessions.get(String(id));
 const clearSession = (id) => sessions.delete(String(id));
 
-// ==================== 6. القوائم الرئيسية ولوحة المفاتيح ====================
-const bottomKeyboard = {
+// ==================== 6. زر البداية الوحيد والواجهة الرئيسية ====================
+
+// زر سفلي واحد فقط "🚀 البداية" كما طلب المدير
+const singleStartKeyboard = {
   reply_markup: {
     keyboard: [
-      [{ text: '🚀 القائمة الرئيسية' }, { text: '🛍️ تصفح الأقسام والخدمات' }],
-      [{ text: '👤 حسابي ورصيدي' }, { text: '💳 شحن الرصيد' }],
-      [{ text: '📦 طلباتي' }, { text: '📞 الدعم الفني' }]
+      [{ text: '🚀 البداية' }]
     ],
     resize_keyboard: true,
     is_persistent: true
   }
 };
 
-function mainKeyboard(ctx) {
+function mainInlineKeyboard(ctx) {
   const rows = [
     [Markup.button.callback('🛍️ تصفح الأقسام والخدمات', 'browse_sections')],
+    [Markup.button.callback('🎁 ربح رصيد مجاني في البوت', 'earn_credit')],
     [
       Markup.button.callback('👤 حسابي ورصيدي', 'account'),
       Markup.button.callback('💳 شحن الرصيد', 'topup')
@@ -333,109 +339,142 @@ function mainKeyboard(ctx) {
   return Markup.inlineKeyboard(rows);
 }
 
-// قائمة الأقسام الأربعة الرئيسية عند الضغط على "تصفح الأقسام والخدمات"
 function sectionsMenuKeyboard() {
-  const rows = [
+  return Markup.inlineKeyboard([
     [Markup.button.callback('📲 قسم تفعيل مواقع التواصل (SMS - Email)', 'sec_verify')],
     [Markup.button.callback('🚀 قسم الرشق وزيادة المتابعين', 'sec_smm')],
     [Markup.button.callback('🏦 قسم المصارف وتحويل العملات', 'sec_exchange')],
-    [Markup.button.callback('💎 قسم المنتجات الرقمية والتعاقدات', 'sec_digital')]
-  ];
-
-  // إذا أضاف المدير منتجات إضافية خاصة من لوحة التحكم تظهر كقسم إضافي
-  if (db.products && db.products.some(p => p.active)) {
-    rows.push([Markup.button.callback('🛒 عروض ومنتجات إضافية مميزة', 'sec_custom_products')]);
-  }
-
-  rows.push([Markup.button.callback('🔙 العودة للقائمة الرئيسية', 'home')]);
-  return Markup.inlineKeyboard(rows);
+    [Markup.button.callback('💎 قسم المنتجات الرقمية والتعاقدات', 'sec_digital')],
+    [Markup.button.callback('🔙 العودة للواجهة الرئيسية', 'home')]
+  ]);
 }
 
-// ==================== 7. البداية والقسم الرئيسي ====================
-async function sendHome(ctx) {
-  const user = getUser(ctx);
-  clearSession(ctx.from.id);
+function buildWelcomeText(ctx, user) {
   const botName = getBotName(ctx);
-
-  await ctx.reply('👋 القائمة السريعة جاهزة بالأسفل لخدمتك:', bottomKeyboard).catch(() => {});
-
-  return ctx.reply(
+  return (
     `🌟 أهلاً بك يا ${user.name} في ${botName}!\n\n` +
     `🆔 رقم حسابك: ${user.id}\n` +
     `💰 رصيدك الحالي: ${money(user.balance)} ${CURRENCY}\n` +
     `👑 بإشراف وإدارة: @${ADMIN_USERNAME}\n\n` +
-    '👇 اضغط على (تصفح الأقسام والخدمات) أو اختر من القائمة أدناه:',
-    mainKeyboard(ctx)
+    `👇 تحكم في كل ما تريده بالضغط المباشر على أزرار الواجهة الرئيسية أدناه:`
   );
 }
 
-bot.start(sendHome);
-bot.hears('🚀 القائمة الرئيسية', sendHome);
+// ==================== 7. معالجة البداية ونظام احتساب ربح الدعوات (0.05$) ====================
+async function handleStart(ctx) {
+  const userId = String(ctx.from.id);
+  const isNewUser = !db.users[userId];
+  const startPayload = ctx.startPayload ? String(ctx.startPayload).trim() : '';
+
+  const user = getUser(ctx);
+  clearSession(userId);
+
+  // التحقق من رابط الدعوة (يُحتسب فقط للمستخدمين الجدد الذين لم يدخلوا البوت من قبل)
+  if (isNewUser && startPayload.startsWith('ref_')) {
+    const referrerId = startPayload.replace('ref_', '').trim();
+
+    if (referrerId && referrerId !== userId && db.users[referrerId]) {
+      const referrer = db.users[referrerId];
+      user.referredBy = referrerId;
+      referrer.balance = Number((referrer.balance + REFERRAL_REWARD).toFixed(2));
+      referrer.invitedCount = (referrer.invitedCount || 0) + 1;
+      referrer.referralEarnings = Number(((referrer.referralEarnings || 0) + REFERRAL_REWARD).toFixed(2));
+      saveDB();
+
+      // إرسال إشعار فوري لصاحب الرابط بحصوله على المكافأة
+      bot.telegram.sendMessage(
+        referrerId,
+        `🎉 مبروك! انضم عضو جديد (${user.name}) من خلال رابط الدعوة الخاص بك!\n\n` +
+        `💵 تمت إضافة مكافأة: ${money(REFERRAL_REWARD)} ${CURRENCY} إلى حسابك.\n` +
+        `💰 رصيدك الحالي: ${money(referrer.balance)} ${CURRENCY}`
+      ).catch(() => {});
+    }
+  }
+
+  // تثبيت زر "🚀 البداية" الوحيد بالأسفل بهدوء تام ثم عرض الواجهة الرئيسية الشفافة
+  await ctx.reply('🔽 القائمة جاهزة:', singleStartKeyboard).catch(() => {});
+  return ctx.reply(buildWelcomeText(ctx, user), mainInlineKeyboard(ctx));
+}
+
+bot.start(handleStart);
+bot.hears(['🚀 البداية', 'البداية', '🚀 القائمة الرئيسية', '🚀 البدء / القائمة الرئيسية'], handleStart);
 
 bot.action('home', async (ctx) => {
   await ctx.answerCbQuery();
   const user = getUser(ctx);
   clearSession(ctx.from.id);
-  const botName = getBotName(ctx);
+  await safeEdit(ctx, buildWelcomeText(ctx, user), mainInlineKeyboard(ctx));
+});
+
+// ==================== 8. قسم ربح رصيد مجاني في البوت (0.05$) ====================
+bot.action('earn_credit', async (ctx) => {
+  await ctx.answerCbQuery();
+  const user = getUser(ctx);
+  const botUsername = (ctx.botInfo && ctx.botInfo.username) ? ctx.botInfo.username : '';
+  const refLink = `https://t.me/${botUsername}?start=ref_${user.id}`;
+
+  const text =
+    `🎁 قسم ربح رصيد مجاني في البوت\n\n` +
+    `🔗 رابط الدعوة الخاص بك:\n` +
+    `${refLink}\n\n` +
+    `📢 شارك رابطك الخاص مع أصدقائك وفي المجموعات؛ وعند انضمام أي شخص جديد إلى البوت من خلال رابطك سوف تحصل فوراً وتلقائياً على 0.05$ في رصيدك بالبوت!\n\n` +
+    `📊 إحصائيات أرباحك من الدعوات:\n` +
+    `👥 عدد المنضمين عبر رابطك: ${user.invitedCount || 0} شخص\n` +
+    `💵 إجمالي ما ربحته من الدعوات: ${money(user.referralEarnings || 0)} ${CURRENCY}`;
 
   await safeEdit(
     ctx,
-    `🌟 أهلاً بك في ${botName}\n\n` +
-    `🆔 رقم حسابك: ${user.id}\n` +
-    `💰 رصيدك الحالي: ${money(user.balance)} ${CURRENCY}\n` +
-    `👑 الإدارة: @${ADMIN_USERNAME}\n\n` +
-    '👇 اختر القسم المطلوب من القائمة:',
-    mainKeyboard(ctx)
+    text,
+    Markup.inlineKeyboard([
+      [Markup.button.url('📤 مشاركة رابطي مع الأصدقاء الآن', `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent('🌟 انضم إلى أفضل بوت للخدمات الرقمية وتفعيل الحسابات والرشق والمصارفة:')}`)],
+      [Markup.button.callback('🔙 العودة للواجهة الرئيسية', 'home')]
+    ])
   );
 });
 
-const openSectionsText =
-  '🛍️ **تصفح الأقسام والخدمات الرئيسية**\n\n' +
-  'اختر القسم المطلوب من الأقسام الأربعة أدناه للمتابعة:';
-
-bot.hears('🛍️ تصفح الأقسام والخدمات', (ctx) => {
-  clearSession(ctx.from.id);
-  return ctx.reply(openSectionsText, sectionsMenuKeyboard());
-});
-
+// ==================== 9. تصفح الأقسام الأربعة الرئيسية ====================
 bot.action('browse_sections', async (ctx) => {
   await ctx.answerCbQuery();
   clearSession(ctx.from.id);
-  return safeEdit(ctx, openSectionsText, sectionsMenuKeyboard());
+  await safeEdit(
+    ctx,
+    '🛍️ تصفح الأقسام والخدمات\n\nاختر القسم المطلوب من الأقسام الرئيسية أدناه:',
+    sectionsMenuKeyboard()
+  );
 });
 
-// ==================== 8. القسم الأول: تفعيل مواقع التواصل (SMS - Email) ====================
+// ==================== 10. القسم الأول: تفعيل مواقع التواصل (SMS - Email) ====================
 bot.action('sec_verify', async (ctx) => {
   await ctx.answerCbQuery();
   const rows = [
     [
-      Markup.button.callback('🟢 تفعيل واتساب (WhatsApp)', 'vapp_wa_0'),
-      Markup.button.callback('✈️ تفعيل تيليجرام (Telegram)', 'vapp_tg_0')
+      Markup.button.callback('🟢 تفعيل حسابات الواتساب', 'vapp_wa_0'),
+      Markup.button.callback('✈️ تفعيل حسابات التيليجرام', 'vapp_tg_0')
     ],
     [
-      Markup.button.callback('🔵 تفعيل إيمو (imo)', 'vapp_imo_0'),
-      Markup.button.callback('👻 تفعيل سناب شات (Snapchat)', 'vapp_sc_0')
+      Markup.button.callback('🔵 تفعيل حسابات الإيمو', 'vapp_imo_0'),
+      Markup.button.callback('👻 تفعيل حسابات سناب شات', 'vapp_sc_0')
     ],
     [
-      Markup.button.callback('🎵 تفعيل تيك توك (TikTok)', 'vapp_tk_0'),
-      Markup.button.callback('📘 تفعيل فيسبوك (Facebook)', 'vapp_fb_0')
+      Markup.button.callback('🎵 تفعيل حسابات تيك توك', 'vapp_tk_0'),
+      Markup.button.callback('📘 تفعيل حسابات فيسبوك', 'vapp_fb_0')
     ],
     [
-      Markup.button.callback('📸 تفعيل انستقرام (Instagram)', 'vapp_ig_0'),
-      Markup.button.callback('📧 تفعيل بالبريد الإلكتروني (Email)', 'vapp_em_0')
+      Markup.button.callback('📸 تفعيل حسابات انستقرام', 'vapp_ig_0'),
+      Markup.button.callback('📧 تفعيل بالبريد الإلكتروني', 'vapp_em_0')
     ],
-    [Markup.button.callback('🔙 رجوع للأقسام الرئيسية', 'browse_sections')]
+    [Markup.button.callback('🔙 رجوع لقائمة الأقسام', 'browse_sections')]
   ];
 
   await safeEdit(
     ctx,
-    '📲 **قسم تفعيل مواقع التواصل (SMS - Email)**\n\n' +
-    'اختر التطبيق أو الموقع الذي ترغب في تفعيله لعرض قائمة دول العالم:',
+    '📲 قسم تفعيل مواقع التواصل (SMS - Email)\n\n' +
+    'اختر القسم الذي ترغب في تفعيله لعرض قائمة دول العالم:',
     Markup.inlineKeyboard(rows)
   );
 });
 
-// عرض دول العالم مع أعلامها بنظام الصفحات السلس
+// عرض جميع دول العالم وبجوار كل دولة علمها
 bot.action(/^vapp_([a-z]+)_(\d+)$/, async (ctx) => {
   await ctx.answerCbQuery();
   const appKey = ctx.match[1];
@@ -443,7 +482,7 @@ bot.action(/^vapp_([a-z]+)_(\d+)$/, async (ctx) => {
   const app = APPS_LIST[appKey];
   if (!app) return;
 
-  const perPage = 14; // 14 دولة في كل صفحة (7 صفوف × عمودين)
+  const perPage = 14;
   const totalPages = Math.ceil(COUNTRIES.length / perPage);
   const currentList = COUNTRIES.slice(page * perPage, (page + 1) * perPage);
 
@@ -459,27 +498,22 @@ bot.action(/^vapp_([a-z]+)_(\d+)$/, async (ctx) => {
     rows.push(pair);
   }
 
-  // أزرار التنقل بين صفحات الدول
   const navRow = [];
-  if (page > 0) {
-    navRow.push(Markup.button.callback('➡️ الصفحة السابقة', `vapp_${appKey}_${page - 1}`));
-  }
-  if (page < totalPages - 1) {
-    navRow.push(Markup.button.callback('⬅️ مزيد من الدول', `vapp_${appKey}_${page + 1}`));
-  }
+  if (page > 0) navRow.push(Markup.button.callback('➡️ الصفحة السابقة', `vapp_${appKey}_${page - 1}`));
+  if (page < totalPages - 1) navRow.push(Markup.button.callback('⬅️ مزيد من الدول', `vapp_${appKey}_${page + 1}`));
   if (navRow.length) rows.push(navRow);
 
-  rows.push([Markup.button.callback('🔙 رجوع لقائمة تطبيقات التفعيل', 'sec_verify')]);
+  rows.push([Markup.button.callback('🔙 رجوع لأقسام التفعيل', 'sec_verify')]);
 
   await safeEdit(
     ctx,
-    `${app.icon} **قسم تفعيل ${app.name}**\n` +
-    `🌍 اختر الدولة المطلوبة من القائمة (صفحة ${page + 1} من ${totalPages}):`,
+    `${app.icon} قسم تفعيل ${app.name}\n` +
+    `🌍 اختر الدولة المطلوبة لتوليد الرقم (صفحة ${page + 1} من ${totalPages}):`,
     Markup.inlineKeyboard(rows)
   );
 });
 
-// عند الضغط على أي دولة: إظهار "جارٍ توليد الرقم بسرعة فائقة..." ثم فحص التوفر
+// عند الضغط على الدولة: يظهر "جارٍ توليد الرقم بسرعة فائقة..." ثم يفحص التوفر
 bot.action(/^vcnt_([a-z]+)_([a-z]+)$/, async (ctx) => {
   const appKey = ctx.match[1];
   const countryCode = ctx.match[2];
@@ -487,61 +521,55 @@ bot.action(/^vcnt_([a-z]+)_([a-z]+)$/, async (ctx) => {
   const country = COUNTRIES.find(c => c.code === countryCode);
   if (!app || !country) return ctx.answerCbQuery();
 
-  await ctx.answerCbQuery('⚡ جارٍ الاتصال بالخادم وتوليد الرقم...');
+  await ctx.answerCbQuery('⚡ جارٍ توليد الرقم بسرعة فائقة...');
 
-  // 1. إظهار شاشة التوليد الفائق السرعة للعميل فوراً
   await safeEdit(
     ctx,
-    `⏳ **جارٍ توليد الرقم بسرعة فائقة...**\n\n` +
+    `⏳ جارٍ توليد الرقم بسرعة فائقة...\n\n` +
     `📱 القسم: تفعيل ${app.name}\n` +
     `🌍 الدولة: ${country.flag} ${country.name} (${country.dial})\n` +
-    `🔄 يرجى الانتظار للحظة ريثما يتم فحص الخوادم المتاحة...`
+    `🔄 يرجى الانتظار لحظة ريثما يتم فحص الأرقام المتاحة...`
   );
 
-  // انتظار لحظي (900 ملي ثانية) لمحاكاة البحث السريع في السيرفر
   await new Promise(resolve => setTimeout(resolve, 900));
 
   const stockKey = `${appKey}_${countryCode}`;
   const customStock = Array.isArray(db.numberStock[stockKey]) ? db.numberStock[stockKey] : [];
   const hasStock = customStock.length > 0 || db.autoGenerateNumbers;
-
   const user = getUser(ctx);
 
-  // الحالة الأولى: لا توجد أرقام متوفرة حالياً في السيرفر لهذه الدولة
   if (!hasStock) {
     return safeEdit(
       ctx,
-      `⚠️ **عذراً، لا يوجد رقم متوفر حالياً لهذه الدولة في الخادم الآلي!**\n\n` +
-      `📱 التطبيق: ${app.icon} ${app.name}\n` +
+      `⚠️ عذراً، لا يوجد رقم متوفر حالياً لهذه الدولة!\n\n` +
+      `📱 القسم: ${app.icon} تفعيل ${app.name}\n` +
       `🌍 الدولة: ${country.flag} ${country.name}\n` +
-      `💵 السعر المعتمد: ${money(country.price)}$\n\n` +
-      `💡 يمكنك اختيار دولة أخرى، أو الضغط على (طلب توفير الرقم عبر الإدارة) ليتم تجهيزه لك فوراً:`,
+      `💵 السعر: ${money(country.price)}$\n\n` +
+      `يمكنك اختيار دولة أخرى، أو الضغط على الزر أدناه لطلب توفير الرقم مباشرة عبر الإدارة:`,
       Markup.inlineKeyboard([
-        [Markup.button.callback(`📩 طلب توفير رقم ${country.name} فوراً (${money(country.price)}$)`, `vreq_${appKey}_${countryCode}`)],
+        [Markup.button.callback(`📩 طلب توفير رقم ${country.name} (${money(country.price)}$)`, `vreq_${appKey}_${countryCode}`)],
         [Markup.button.callback('🌍 اختيار دولة أخرى', `vapp_${appKey}_0`)],
-        [Markup.button.callback('🔙 رجوع لقسم التفعيل', 'sec_verify')]
+        [Markup.button.callback('🔙 رجوع لأقسام التفعيل', 'sec_verify')]
       ])
     );
   }
 
-  // الحالة الثانية: الرقم متوفر (ولكن نتحقق من رصيد العميل أولاً)
   if (user.balance < country.price) {
     return safeEdit(
       ctx,
-      `✅ **الرقم متوفر وجاهز للتوليد الفوري!**\n\n` +
-      `📱 التطبيق: ${app.icon} ${app.name}\n` +
+      `✅ الرقم متوفر وجاهز للتوليد الفوري!\n\n` +
+      `📱 القسم: ${app.icon} تفعيل ${app.name}\n` +
       `🌍 الدولة: ${country.flag} ${country.name}\n` +
       `💵 سعر الرقم: ${money(country.price)}$\n` +
       `💰 رصيدك الحالي: ${money(user.balance)}$\n\n` +
-      `❌ **رصيدك غير كافٍ لسحب الرقم.** يرجى شحن حسابك أولاً:`,
+      `❌ رصيدك غير كافٍ لإتمام العملية. يرجى شحن رصيدك أو ربح رصيد مجاني من الدعوات:`,
       Markup.inlineKeyboard([
-        [Markup.button.callback('💳 شحن الرصيد الآن', 'topup')],
+        [Markup.button.callback('💳 شحن الرصيد الآن', 'topup'), Markup.button.callback('🎁 ربح رصيد مجاني', 'earn_credit')],
         [Markup.button.callback('🌍 اختيار دولة أخرى', `vapp_${appKey}_0`)]
       ])
     );
   }
 
-  // خصم الرصيد وتوليد/سحب الرقم
   user.balance = Number((user.balance - country.price).toFixed(2));
   let generatedNumber;
   if (customStock.length > 0) {
@@ -564,34 +592,28 @@ bot.action(/^vcnt_([a-z]+)_([a-z]+)$/, async (ctx) => {
 
   await safeEdit(
     ctx,
-    `🎉 **تم توليد وتخصيص الرقم لك بنجاح!**\n\n` +
+    `🎉 تم توليد الرقم وتخصيصه لك بنجاح!\n\n` +
     `🧾 رقم الطلب: #${order.id}\n` +
-    `📱 التطبيق: ${app.icon} ${app.name}\n` +
+    `📱 القسم: ${app.icon} ${app.name}\n` +
     `🌍 الدولة: ${country.flag} ${country.name}\n` +
-    `📞 الرقم المخصص: \`${generatedNumber}\`\n` +
+    `📞 الرقم المخصص: ${generatedNumber}\n` +
     `💰 رصيدك المتبقي: ${money(user.balance)}$\n\n` +
-    `⏳ **ضع الرقم في التطبيق الآن؛ سيصلك كود التفعيل (SMS/Email) هنا فوراً.**`,
-    Markup.inlineKeyboard([
-      [Markup.button.callback('🔙 رجوع لقسم التفعيل', 'sec_verify')]
-    ])
+    `⏳ سيصلك رمز التفعيل هنا فور وروده.`,
+    Markup.inlineKeyboard([[Markup.button.callback('🔙 رجوع لأقسام التفعيل', 'sec_verify')]])
   );
 
   await notifyAdmin(
-    `🔔 **سحب رقم تفعيل جديد (#${order.id})**\n\n` +
-    `📱 التطبيق: ${app.name}\n` +
+    `🔔 سحب رقم تفعيل جديد (#${order.id})\n\n` +
+    `📱 القسم: ${app.name}\n` +
     `🌍 الدولة: ${country.flag} ${country.name}\n` +
     `📞 الرقم: ${generatedNumber}\n` +
-    `👤 العميل: ${user.name} (@${user.username || 'بدون_معرف'})\n` +
-    `🆔 معرف العميل: ${user.id}\n` +
-    `💵 المبلغ المخصوم: ${money(country.price)}$\n\n` +
-    `👇 لإرسال كود التفعيل للعميل اكتب:\n/deliver ${order.id} كود_التفعيل`,
-    Markup.inlineKeyboard([
-      [Markup.button.callback('✅ إكمال الطلب', `complete_order_${order.id}`)]
-    ])
+    `👤 العميل: ${user.name} (${user.id})\n` +
+    `💵 المبلغ: ${money(country.price)}$\n\n` +
+    `لإرسال الكود للعميل اكتب:\n/deliver ${order.id} الكود`,
+    Markup.inlineKeyboard([[Markup.button.callback('✅ إكمال الطلب', `complete_order_${order.id}`)]])
   );
 });
 
-// طلب توفير رقم يدوي عندما يكون الخادم الآلي فارغاً
 bot.action(/^vreq_([a-z]+)_([a-z]+)$/, async (ctx) => {
   await ctx.answerCbQuery();
   const app = APPS_LIST[ctx.match[1]];
@@ -602,10 +624,9 @@ bot.action(/^vreq_([a-z]+)_([a-z]+)$/, async (ctx) => {
   if (user.balance < country.price) {
     return safeEdit(
       ctx,
-      `❌ **رصيدك غير كافٍ لتسجيل الطلب.**\n\n` +
-      `💵 المطلوب: ${money(country.price)}$ | 💰 رصيدك: ${money(user.balance)}$`,
+      `❌ رصيدك غير كافٍ لتسجيل الطلب.\n💵 المطلوب: ${money(country.price)}$ | 💰 رصيدك: ${money(user.balance)}$`,
       Markup.inlineKeyboard([
-        [Markup.button.callback('💳 شحن الرصيد الآن', 'topup')],
+        [Markup.button.callback('💳 شحن الرصيد', 'topup'), Markup.button.callback('🎁 ربح رصيد مجاني', 'earn_credit')],
         [Markup.button.callback('🔙 رجوع', `vapp_${ctx.match[1]}_0`)]
       ])
     );
@@ -615,7 +636,7 @@ bot.action(/^vreq_([a-z]+)_([a-z]+)$/, async (ctx) => {
   const order = {
     id: db.nextOrderId++,
     userId: user.id,
-    productName: `طلب تفعيل ${app.name} - ${country.flag} ${country.name}`,
+    productName: `طلب رقم ${app.name} - ${country.flag} ${country.name}`,
     price: country.price,
     status: 'pending',
     date: new Date().toISOString()
@@ -625,38 +646,36 @@ bot.action(/^vreq_([a-z]+)_([a-z]+)$/, async (ctx) => {
 
   await safeEdit(
     ctx,
-    `✅ **تم تسجيل طلب توفير الرقم بنجاح (#${order.id})!**\n\n` +
+    `✅ تم تسجيل طلب توفير الرقم بنجاح (#${order.id})!\n\n` +
     `📱 القسم: ${app.icon} ${app.name}\n` +
     `🌍 الدولة: ${country.flag} ${country.name}\n` +
     `💰 رصيدك المتبقي: ${money(user.balance)}$\n\n` +
-    `⏳ ستقوم الإدارة (@${ADMIN_USERNAME}) بإرسال الرقم وكود التفعيل لك هنا فوراً.`,
-    Markup.inlineKeyboard([[Markup.button.callback('🔙 القائمة الرئيسية', 'home')]])
+    `⏳ ستقوم الإدارة (@${ADMIN_USERNAME}) بإرسال الرقم ورمز التفعيل لك هنا فوراً.`,
+    Markup.inlineKeyboard([[Markup.button.callback('🔙 العودة للواجهة الرئيسية', 'home')]])
   );
 
   await notifyAdmin(
-    `📲 **طلب توفير رقم تفعيل (#${order.id})**\n\n` +
-    `📱 التطبيق: ${app.name}\n` +
-    `🌍 الدولة: ${country.flag} ${country.name}\n` +
-    `💵 المبلغ المخصوم: ${money(country.price)}$\n` +
-    `👤 العميل: ${user.name} (${user.id})\n\n` +
-    `👇 لإرسال الرقم أو الكود للعميل اكتب:\n/deliver ${order.id} الرقم_أو_الكود`,
+    `📲 طلب توفير رقم تفعيل (#${order.id})\n` +
+    `📱 القسم: ${app.name} | ${country.flag} ${country.name}\n` +
+    `👤 العميل: ${user.name} (${user.id})\n` +
+    `لإرسال الرقم أو الكود اكتب:\n/deliver ${order.id} الرقم_والكود`,
     Markup.inlineKeyboard([[Markup.button.callback('✅ إكمال الطلب', `complete_order_${order.id}`)]])
   );
 });
 
-// ==================== 9. القسم الثاني: الرشق وزيادة المتابعين ====================
+// ==================== 11. القسم الثاني: الرشق وزيادة المتابعين ====================
 bot.action('sec_smm', async (ctx) => {
   await ctx.answerCbQuery();
   const rows = Object.keys(SMM_PLATFORMS).map(key => {
     const p = SMM_PLATFORMS[key];
     return [Markup.button.callback(`${p.icon} رشق ${p.name}`, `smm_plat_${key}`)];
   });
-  rows.push([Markup.button.callback('🔙 رجوع للأقسام الرئيسية', 'browse_sections')]);
+  rows.push([Markup.button.callback('🔙 رجوع لقائمة الأقسام', 'browse_sections')]);
 
   await safeEdit(
     ctx,
-    '🚀 **قسم الرشق وزيادة المتابعين والمشاهدات**\n\n' +
-    'اختر المنصة التي ترغب في دعمها وزيادة التفاعل فيها:',
+    '🚀 قسم الرشق وزيادة المتابعين\n\n' +
+    'اختر الموقع أو التطبيق الذي ترغب في رشقه وزيادة متابعيه:',
     Markup.inlineKeyboard(rows)
   );
 });
@@ -670,12 +689,12 @@ bot.action(/^smm_plat_([a-z]+)$/, async (ctx) => {
   const rows = plat.services.map(srv => [
     Markup.button.callback(`${srv.name} — ${money(srv.price)}$`, `smm_buy_${key}_${srv.id}`)
   ]);
-  rows.push([Markup.button.callback('🔙 رجوع لمنصات الرشق', 'sec_smm')]);
+  rows.push([Markup.button.callback('🔙 رجوع لأقسام الرشق', 'sec_smm')]);
 
   await safeEdit(
     ctx,
-    `${plat.icon} **خدمات رشق ${plat.name}**\n\n` +
-    'اختر الباقة المطلوبة لتنفيذها بسرعة وضمان عالٍ:',
+    `${plat.icon} قسم رشق ${plat.name}\n\n` +
+    'اختر الخدمة المطلوبة من القائمة أدناه:',
     Markup.inlineKeyboard(rows)
   );
 });
@@ -693,11 +712,11 @@ bot.action(/^smm_buy_([a-z]+)_([a-z0-9_]+)$/, async (ctx) => {
   if (user.balance < srv.price) {
     return safeEdit(
       ctx,
-      `❌ **رصيدك غير كافٍ لطلب هذه الباقة.**\n\n` +
+      `❌ رصيدك غير كافٍ لطلب هذه الخدمة.\n\n` +
       `📦 الخدمة: ${srv.name}\n` +
       `💵 السعر: ${money(srv.price)}$ | 💰 رصيدك: ${money(user.balance)}$`,
       Markup.inlineKeyboard([
-        [Markup.button.callback('💳 شحن الرصيد الآن', 'topup')],
+        [Markup.button.callback('💳 شحن الرصيد', 'topup'), Markup.button.callback('🎁 ربح رصيد مجاني', 'earn_credit')],
         [Markup.button.callback('🔙 رجوع', `smm_plat_${platKey}`)]
       ])
     );
@@ -712,99 +731,87 @@ bot.action(/^smm_buy_([a-z]+)_([a-z0-9_]+)$/, async (ctx) => {
 
   await safeEdit(
     ctx,
-    `🔗 **إدخال رابط الحساب أو المنشور**\n\n` +
-    `📦 الخدمة المختارة: ${srv.name}\n` +
-    `💵 التكلفة: ${money(srv.price)}$\n\n` +
-    `✍️ **أرسل الآن في رسالة رابط الحساب أو القناة أو الفيديو المراد رشقه:**`,
+    `🔗 إرسال رابط الحساب أو المنشور\n\n` +
+    `📦 الخدمة: ${srv.name}\n` +
+    `💵 السعر: ${money(srv.price)}$\n\n` +
+    `✍️ أرسل الآن رابط الحساب أو القناة أو المنشور المراد رشقه:`,
     Markup.inlineKeyboard([[Markup.button.callback('❌ إلغاء والرجوع', `smm_plat_${platKey}`)]])
   );
 });
 
-// ==================== 10. القسم الثالث: المصارف وتحويل العملات ====================
+// ==================== 12. القسم الثالث: المصارف وتحويل العملات ====================
 bot.action('sec_exchange', async (ctx) => {
   await ctx.answerCbQuery();
   const rows = [
-    [Markup.button.callback('💎 قسم العملات الرقمية (Crypto / USDT)', 'ex_crypto')],
-    [Markup.button.callback('💵 قسم العملات النقدية والبنوك والحوالات', 'ex_fiat')],
-    [Markup.button.callback('🔙 رجوع للأقسام الرئيسية', 'browse_sections')]
+    [Markup.button.callback('💎 قسم العملات الرقمية', 'ex_crypto')],
+    [Markup.button.callback('💵 قسم العملات النقدية والمحافظ', 'ex_fiat')],
+    [Markup.button.callback('🔙 رجوع لقائمة الأقسام', 'browse_sections')]
   ];
 
   await safeEdit(
     ctx,
-    '🏦 **قسم المصارف وتحويل العملات**\n\n' +
-    'نقدم خدمات المصارفة والتحويل والشحن والسحب بأفضل الأسعار وأعلى درجات الأمان.\n' +
-    '👇 اختر القسم المطلوب:',
+    '🏦 قسم المصارف وتحويل العملات\n\n' +
+    'اختر القسم المطلوب لإجراء عمليات التحويل أو المصارفة:',
     Markup.inlineKeyboard(rows)
   );
 });
 
 bot.action('ex_crypto', async (ctx) => {
   await ctx.answerCbQuery();
-  const rows = CRYPTO_CURRENCIES.map(c => [
-    Markup.button.callback(c.name, `ex_item_${c.id}`)
-  ]);
+  const rows = CRYPTO_CURRENCIES.map(c => [Markup.button.callback(c.name, `ex_item_${c.id}`)]);
   rows.push([Markup.button.callback('🔙 رجوع لقسم المصارف', 'sec_exchange')]);
 
   await safeEdit(
     ctx,
-    '💎 **قسم العملات الرقمية (بيع / شراء / تبديل)**\n\n' +
-    'اختر العملة الرقمية التي ترغب في التعامل بها:',
+    '💎 قسم العملات الرقمية\n\nاختر العملة الرقمية المطلوبة:',
     Markup.inlineKeyboard(rows)
   );
 });
 
 bot.action('ex_fiat', async (ctx) => {
   await ctx.answerCbQuery();
-  const rows = FIAT_CURRENCIES.map(f => [
-    Markup.button.callback(f.name, `ex_item_${f.id}`)
-  ]);
+  const rows = FIAT_CURRENCIES.map(f => [Markup.button.callback(f.name, `ex_item_${f.id}`)]);
   rows.push([Markup.button.callback('🔙 رجوع لقسم المصارف', 'sec_exchange')]);
 
   await safeEdit(
     ctx,
-    '💵 **قسم العملات النقدية والبنوك الإلكترونية والحوالات**\n\n' +
-    'اختر العملة أو البنك المطلوب لإجراء التحويل أو المصارفة:',
+    '💵 قسم العملات النقدية والمحافظ\n\nاختر العملة أو الجهة المطلوبة:',
     Markup.inlineKeyboard(rows)
   );
 });
 
 bot.action(/^ex_item_([a-z0-9_]+)$/, async (ctx) => {
   await ctx.answerCbQuery();
-  const itemId = ctx.match[1];
-  const item = [...CRYPTO_CURRENCIES, ...FIAT_CURRENCIES].find(x => x.id === itemId);
+  const item = [...CRYPTO_CURRENCIES, ...FIAT_CURRENCIES].find(x => x.id === ctx.match[1]);
   if (!item) return;
 
-  setSession(ctx.from.id, {
-    action: 'exchange_request',
-    currencyName: item.name
-  });
+  setSession(ctx.from.id, { action: 'exchange_request', currencyName: item.name });
 
   await safeEdit(
     ctx,
-    `🏦 **طلب عملية مصارفة أو تحويل**\n\n` +
-    `📌 العملة / الجهة المختارة:\n${item.name}\n\n` +
-    `✍️ **أرسل الآن تفاصيل طلبك في رسالة (المبلغ، وهل ترغب في البيع أم الشراء أم التحويل) وسيتم الرد عليك فوراً، أو تواصل مباشرة مع الإدارة:**`,
+    `🏦 طلب مصارفة أو تحويل\n\n` +
+    `📌 العملة المختارة: ${item.name}\n\n` +
+    `✍️ أرسل الآن تفاصيل طلبك (المبلغ ونوع التحويل المطلوب) وسيتم الرد عليك فوراً، أو تواصل مباشرة مع الإدارة:`,
     Markup.inlineKeyboard([
-      [Markup.button.url('👨‍💼 محادثة الإدارة مباشرة (@' + ADMIN_USERNAME + ')', 'https://t.me/' + ADMIN_USERNAME)],
+      [Markup.button.url('👨‍💼 مراسلة الإدارة مباشرة (@' + ADMIN_USERNAME + ')', 'https://t.me/' + ADMIN_USERNAME)],
       [Markup.button.callback('🔙 رجوع لقسم المصارف', 'sec_exchange')]
     ])
   );
 });
 
-// ==================== 11. القسم الرابع: المنتجات الرقمية والتعاقدات ====================
+// ==================== 13. القسم الرابع: المنتجات الرقمية والتعاقدات ====================
 bot.action('sec_digital', async (ctx) => {
   await ctx.answerCbQuery();
   const rows = [
     [Markup.button.callback('🛒 قسم شراء المنتجات الرقمية والتعاقدات', 'dig_buy_menu')],
     [Markup.button.callback('💰 قسم بيع المنتجات الرقمية والتعاقدات', 'dig_sell_menu')],
-    [Markup.button.callback('🔙 رجوع للأقسام الرئيسية', 'browse_sections')]
+    [Markup.button.callback('🔙 رجوع لقائمة الأقسام', 'browse_sections')]
   ];
 
   await safeEdit(
     ctx,
-    '💎 **قسم المنتجات الرقمية والتعاقدات**\n\n' +
-    'بوابتك الآمنة لشراء وبيع كافة المنتجات الرقمية والاشتراكات وإبرام عقود العمل والوساطة التجارية بإشراف الإدارة.\n' +
-    '👇 اختر القسم المطلوب:',
+    '💎 قسم المنتجات الرقمية والتعاقدات\n\n' +
+    'اختر القسم المطلوب (شراء أو بيع المنتجات الرقمية والتعاقدات):',
     Markup.inlineKeyboard(rows)
   );
 });
@@ -818,8 +825,7 @@ bot.action('dig_buy_menu', async (ctx) => {
 
   await safeEdit(
     ctx,
-    '🛒 **قسم شراء المنتجات الرقمية والتعاقدات**\n\n' +
-    'اختر المنتج أو الخدمة التي ترغب في شرائها:',
+    '🛒 قسم شراء المنتجات الرقمية والتعاقدات\n\nاختر الخدمة أو المنتج المطلوب:',
     Markup.inlineKeyboard(rows)
   );
 });
@@ -831,11 +837,11 @@ bot.action(/^dig_b_item_([a-z0-9_]+)$/, async (ctx) => {
 
   await safeEdit(
     ctx,
-    `🛒 **تفاصيل المنتج / الخدمة**\n\n` +
+    `🛒 تأكيد الطلب\n\n` +
     `📦 الخدمة: ${item.name}\n` +
     `💵 السعر المبدئي: ${money(item.price)}$\n` +
-    `🛡️ الضمان: ضمان كامل وإشراف مباشر من @${ADMIN_USERNAME}\n\n` +
-    `اضغط لتأكيد الشراء من رصيدك أو راسل الإدارة للتفاصيل الخاصة:`,
+    `🛡️ بإشراف وضمان الإدارة: @${ADMIN_USERNAME}\n\n` +
+    `اضغط لتأكيد الطلب من رصيدك أو تواصل مع الإدارة للتفاصيل:`,
     Markup.inlineKeyboard([
       [Markup.button.callback(`✅ تأكيد الشراء (${money(item.price)}$)`, `dig_confirm_${item.id}`)],
       [Markup.button.url('👨‍💼 التعاقد المباشر مع الإدارة', 'https://t.me/' + ADMIN_USERNAME)],
@@ -853,10 +859,9 @@ bot.action(/^dig_confirm_([a-z0-9_]+)$/, async (ctx) => {
   if (user.balance < item.price) {
     return safeEdit(
       ctx,
-      `❌ **رصيدك غير كافٍ لإتمام الشراء.**\n` +
-      `💵 السعر: ${money(item.price)}$ | 💰 رصيدك: ${money(user.balance)}$`,
+      `❌ رصيدك غير كافٍ لإتمام الطلب.\n💵 السعر: ${money(item.price)}$ | 💰 رصيدك: ${money(user.balance)}$`,
       Markup.inlineKeyboard([
-        [Markup.button.callback('💳 شحن الرصيد الآن', 'topup')],
+        [Markup.button.callback('💳 شحن الرصيد', 'topup'), Markup.button.callback('🎁 ربح رصيد مجاني', 'earn_credit')],
         [Markup.button.callback('🔙 رجوع', 'dig_buy_menu')]
       ])
     );
@@ -876,19 +881,19 @@ bot.action(/^dig_confirm_([a-z0-9_]+)$/, async (ctx) => {
 
   await safeEdit(
     ctx,
-    `✅ **تم تسجيل طلب الشراء بنجاح (#${order.id})!**\n\n` +
-    `📦 المنتج: ${item.name}\n` +
+    `✅ تم تسجيل طلبك بنجاح (#${order.id})!\n\n` +
+    `📦 الخدمة: ${item.name}\n` +
     `💰 رصيدك المتبقي: ${money(user.balance)}$\n\n` +
-    `⏳ سيتم تسليمك تفاصيل المنتج والتعاقد هنا فوراً من قِبل الإدارة @${ADMIN_USERNAME}.`,
-    Markup.inlineKeyboard([[Markup.button.callback('🔙 القائمة الرئيسية', 'home')]])
+    `⏳ سيتم التواصل معك وتسليمك التفاصيل فوراً من قِبل الإدارة @${ADMIN_USERNAME}.`,
+    Markup.inlineKeyboard([[Markup.button.callback('🔙 العودة للواجهة الرئيسية', 'home')]])
   );
 
   await notifyAdmin(
-    `💎 **طلب شراء منتج رقمي / تعاقد (#${order.id})**\n\n` +
-    `📦 المنتج: ${item.name}\n` +
+    `💎 طلب شراء منتج رقمي / تعاقد (#${order.id})\n` +
+    `📦 الخدمة: ${item.name}\n` +
     `💵 المبلغ: ${money(item.price)}$\n` +
-    `👤 العميل: ${user.name} (${user.id})\n\n` +
-    `👇 لتسليم العميل اكتب:\n/deliver ${order.id} بيانات_المنتج`,
+    `👤 العميل: ${user.name} (${user.id})\n` +
+    `لإرسال التسليم اكتب:\n/deliver ${order.id} التفاصيل`,
     Markup.inlineKeyboard([[Markup.button.callback('✅ إكمال الطلب', `complete_order_${order.id}`)]])
   );
 });
@@ -902,8 +907,7 @@ bot.action('dig_sell_menu', async (ctx) => {
 
   await safeEdit(
     ctx,
-    '💰 **قسم بيع المنتجات الرقمية والتعاقدات**\n\n' +
-    'اختر نوع المنتج أو الخدمة الرقمية التي ترغب في بيعها أو عرضها للتعاقد:',
+    '💰 قسم بيع المنتجات الرقمية والتعاقدات\n\nاختر نوع المنتج أو التعاقد الذي ترغب في عرضه للبيع:',
     Markup.inlineKeyboard(rows)
   );
 });
@@ -913,16 +917,13 @@ bot.action(/^dig_s_item_([a-z0-9_]+)$/, async (ctx) => {
   const item = DIGITAL_SELL_ITEMS.find(x => x.id === ctx.match[1]);
   if (!item) return;
 
-  setSession(ctx.from.id, {
-    action: 'sell_digital_offer',
-    categoryName: item.name
-  });
+  setSession(ctx.from.id, { action: 'sell_digital_offer', categoryName: item.name });
 
   await safeEdit(
     ctx,
-    `💰 **تقديم عرض بيع أو تعاقد رقمي**\n\n` +
-    `📌 القسم المختار:\n${item.name}\n\n` +
-    `✍️ **أرسل الآن في رسالة مواصفات المنتج أو الحساب الذي تريد بيعه والسعر المطلوب، ليتم فحصه واعتماده من الإدارة:**`,
+    `💰 تقديم عرض بيع أو تعاقد رقمي\n\n` +
+    `📌 القسم المختار: ${item.name}\n\n` +
+    `✍️ أرسل الآن تفاصيل ما ترغب في بيعه والسعر المطلوب ليتم مراجعته من الإدارة:`,
     Markup.inlineKeyboard([
       [Markup.button.url('👨‍💼 التواصل المباشر مع الإدارة', 'https://t.me/' + ADMIN_USERNAME)],
       [Markup.button.callback('🔙 رجوع لقائمة البيع', 'dig_sell_menu')]
@@ -930,96 +931,21 @@ bot.action(/^dig_s_item_([a-z0-9_]+)$/, async (ctx) => {
   );
 });
 
-// عرض المنتجات المضافة يدوياً من لوحة التحكم (إن وجدت)
-bot.action('sec_custom_products', async (ctx) => {
-  await ctx.answerCbQuery();
-  const products = db.products.filter(p => p.active);
-  if (!products.length) return safeEdit(ctx, 'لا توجد عروض إضافية حالياً.', sectionsMenuKeyboard());
-
-  const buttons = products.map(p => [
-    Markup.button.callback(`${p.name} — ${money(p.price)}$`, `product_${p.id}`)
-  ]);
-  buttons.push([Markup.button.callback('🔙 رجوع للأقسام الرئيسية', 'browse_sections')]);
-  await safeEdit(ctx, '🛒 **العروض والمنتجات الإضافية:**', Markup.inlineKeyboard(buttons));
-});
-
-bot.action(/^product_(\d+)$/, async (ctx) => {
-  await ctx.answerCbQuery();
-  const product = db.products.find(p => p.id === Number(ctx.match[1]) && p.active);
-  if (!product) return ctx.reply('هذه الخدمة غير متاحة حالياً.');
-
-  await safeEdit(
-    ctx,
-    `🛍️ ${product.name}\n\n📝 التفاصيل: ${product.description}\n💵 السعر: ${money(product.price)}$`,
-    Markup.inlineKeyboard([
-      [Markup.button.callback('✅ شراء وتأكيد الطلب', `buy_${product.id}`)],
-      [Markup.button.callback('🔙 رجوع', 'sec_custom_products')]
-    ])
-  );
-});
-
-bot.action(/^buy_(\d+)$/, async (ctx) => {
-  await ctx.answerCbQuery();
-  const user = getUser(ctx);
-  const product = db.products.find(p => p.id === Number(ctx.match[1]) && p.active);
-  if (!product) return;
-
-  if (user.balance < product.price) {
-    return ctx.reply(`❌ رصيدك غير كافٍ (${money(user.balance)}$).`, Markup.inlineKeyboard([[Markup.button.callback('💳 شحن الرصيد', 'topup')]]));
-  }
-
-  user.balance = Number((user.balance - product.price).toFixed(2));
-  let deliveredCode = (product.deliveryType === 'automatic' && Array.isArray(product.stock) && product.stock.length)
-    ? product.stock.shift()
-    : null;
-
-  const order = {
-    id: db.nextOrderId++,
-    userId: user.id,
-    productName: product.name,
-    price: product.price,
-    status: deliveredCode ? 'completed' : 'pending',
-    date: new Date().toISOString()
-  };
-  db.orders.push(order);
-  saveDB();
-
-  if (deliveredCode) {
-    await ctx.reply(`✅ تم الشراء بنجاح (#${order.id})!\n🔐 البيانات:\n${deliveredCode}`);
-  } else {
-    await ctx.reply(`✅ تم تسجيل طلبك (#${order.id})، سيتم التنفيذ فوراً عبر @${ADMIN_USERNAME}.`);
-    await notifyAdmin(`🔔 طلب جديد #${order.id}: ${product.name}\nالعميل: ${user.id}\n/deliver ${order.id} الكود`);
-  }
-});
-
-// ==================== 12. الحساب، الشحن، الطلبات، والدعم ====================
-bot.hears('👤 حسابي ورصيدي', (ctx) => {
-  const user = getUser(ctx);
-  return ctx.reply(
-    `👤 **بيانات حسابك الشخصي:**\n\n🆔 رقم الحساب: ${user.id}\n👤 الاسم: ${user.name}\n💰 الرصيد الحالي: ${money(user.balance)} ${CURRENCY}`,
-    Markup.inlineKeyboard([[Markup.button.callback('💳 شحن الرصيد', 'topup')]])
-  );
-});
-
+// ==================== 14. الحساب، الشحن، الطلبات، والتعليمات ====================
 bot.action('account', async (ctx) => {
   await ctx.answerCbQuery();
   const user = getUser(ctx);
   await safeEdit(
     ctx,
-    `👤 **بيانات حسابك الشخصي:**\n\n🆔 رقم الحساب: ${user.id}\n👤 الاسم: ${user.name}\n💰 الرصيد الحالي: ${money(user.balance)} ${CURRENCY}\n📅 تاريخ الانضمام: ${user.createdAt.slice(0, 10)}`,
+    `👤 بيانات حسابك الشخصي\n\n` +
+    `🆔 رقم الحساب: ${user.id}\n` +
+    `👤 الاسم: ${user.name}\n` +
+    `💰 الرصيد الحالي: ${money(user.balance)} ${CURRENCY}\n` +
+    `👥 الدعوات الناجحة: ${user.invitedCount || 0}\n` +
+    `📅 تاريخ التسجيل: ${user.createdAt.slice(0, 10)}`,
     Markup.inlineKeyboard([
-      [Markup.button.callback('💳 شحن الرصيد', 'topup')],
-      [Markup.button.callback('🔙 رجوع', 'home')]
-    ])
-  );
-});
-
-bot.hears('💳 شحن الرصيد', (ctx) => {
-  return ctx.reply(
-    `💳 **شحن رصيد المحفظة**\n\nاضغط على الزر أدناه لتحديد المبلغ، أو تواصل مع الإدارة @${ADMIN_USERNAME}:`,
-    Markup.inlineKeyboard([
-      [Markup.button.callback('💵 إدخال مبلغ الشحن', 'topup_enter')],
-      [Markup.button.url('👨‍💼 مراسلة الإدارة', 'https://t.me/' + ADMIN_USERNAME)]
+      [Markup.button.callback('💳 شحن الرصيد', 'topup'), Markup.button.callback('🎁 ربح رصيد مجاني', 'earn_credit')],
+      [Markup.button.callback('🔙 العودة للواجهة الرئيسية', 'home')]
     ])
   );
 });
@@ -1028,11 +954,13 @@ bot.action('topup', async (ctx) => {
   await ctx.answerCbQuery();
   await safeEdit(
     ctx,
-    `💳 **شحن رصيد المحفظة**\n\n1️⃣ اضغط على (إدخال مبلغ الشحن) واكتب القيمة بالدولار.\n2️⃣ أرسل إشعار الدفع إلى الإدارة @${ADMIN_USERNAME} لاعتماد الرصيد فوراً.`,
+    `💳 شحن الرصيد في البوت\n\n` +
+    `1️⃣ اضغط على (إدخال مبلغ الشحن) واكتب القيمة المراد شحنها بالدولار.\n` +
+    `2️⃣ تواصل مع الإدارة @${ADMIN_USERNAME} لإرسال الإيصال واعتماد الرصيد فوراً.`,
     Markup.inlineKeyboard([
       [Markup.button.callback('💵 إدخال مبلغ الشحن', 'topup_enter')],
-      [Markup.button.url('👨‍💼 مراسلة الإدارة', 'https://t.me/' + ADMIN_USERNAME)],
-      [Markup.button.callback('🔙 رجوع', 'home')]
+      [Markup.button.url('👨‍💼 مراسلة الإدارة (@' + ADMIN_USERNAME + ')', 'https://t.me/' + ADMIN_USERNAME)],
+      [Markup.button.callback('🔙 العودة للواجهة الرئيسية', 'home')]
     ])
   );
 });
@@ -1043,50 +971,33 @@ bot.action('topup_enter', async (ctx) => {
   await ctx.reply('💵 أرسل الآن مبلغ الشحن المطلوب بالأرقام (مثال: 10):');
 });
 
-bot.hears('📦 طلباتي', (ctx) => {
-  const orders = db.orders.filter(o => o.userId === String(ctx.from.id)).slice(-10).reverse();
-  if (!orders.length) return ctx.reply('📦 لا توجد طلبات سابقة مسجلة في حسابك.');
-  const st = { pending: '⏳ قيد التنفيذ', completed: '✅ مكتمل', cancelled: '❌ ملغي' };
-  let msg = '📦 **سجل آخر طلباتك:**\n\n';
-  orders.forEach(o => {
-    msg += `🧾 #${o.id} | ${o.productName}\n💵 ${money(o.price)}$ | ${st[o.status] || o.status}\n\n`;
-  });
-  return ctx.reply(msg);
-});
-
 bot.action('myorders', async (ctx) => {
   await ctx.answerCbQuery();
   const orders = db.orders.filter(o => o.userId === String(ctx.from.id)).slice(-10).reverse();
   if (!orders.length) {
-    return safeEdit(ctx, '📦 لا توجد طلبات سابقة مسجلة في حسابك.', Markup.inlineKeyboard([[Markup.button.callback('🔙 رجوع', 'home')]]));
+    return safeEdit(
+      ctx,
+      '📦 لا توجد طلبات سابقة مسجلة في حسابك.',
+      Markup.inlineKeyboard([[Markup.button.callback('🔙 العودة للواجهة الرئيسية', 'home')]])
+    );
   }
   const st = { pending: '⏳ قيد التنفيذ', completed: '✅ مكتمل', cancelled: '❌ ملغي' };
-  let msg = '📦 **سجل آخر طلباتك:**\n\n';
+  let msg = '📦 سجل آخر طلباتك:\n\n';
   orders.forEach(o => {
     msg += `🧾 #${o.id} | ${o.productName}\n💵 ${money(o.price)}$ | ${st[o.status] || o.status}\n\n`;
   });
-  await safeEdit(ctx, msg, Markup.inlineKeyboard([[Markup.button.callback('🔙 رجوع', 'home')]]));
-});
-
-bot.hears('📞 الدعم الفني', (ctx) => {
-  return ctx.reply(
-    `📞 **الدعم الفني وإدارة المنصة:** @${ADMIN_USERNAME}`,
-    Markup.inlineKeyboard([
-      [Markup.button.callback('✉️ إرسال رسالة مباشرة عبر البوت', 'contact_support')],
-      [Markup.button.url('👨‍💼 محادثة الإدارة مباشرة', 'https://t.me/' + ADMIN_USERNAME)]
-    ])
-  );
+  await safeEdit(ctx, msg, Markup.inlineKeyboard([[Markup.button.callback('🔙 العودة للواجهة الرئيسية', 'home')]]));
 });
 
 bot.action('support', async (ctx) => {
   await ctx.answerCbQuery();
   await safeEdit(
     ctx,
-    `📞 **الدعم الفني وإدارة المنصة (@${ADMIN_USERNAME}):**`,
+    `📞 الدعم الفني وإدارة البوت (@${ADMIN_USERNAME})\n\nاختر طريقة التواصل:`,
     Markup.inlineKeyboard([
-      [Markup.button.callback('✉️ كتابة رسالة للدعم', 'contact_support')],
+      [Markup.button.callback('✉️ كتابة رسالة مباشرة للإدارة', 'contact_support')],
       [Markup.button.url('👨‍💼 محادثة الإدارة مباشرة', 'https://t.me/' + ADMIN_USERNAME)],
-      [Markup.button.callback('🔙 رجوع', 'home')]
+      [Markup.button.callback('🔙 العودة للواجهة الرئيسية', 'home')]
     ])
   );
 });
@@ -1094,26 +1005,26 @@ bot.action('support', async (ctx) => {
 bot.action('contact_support', async (ctx) => {
   await ctx.answerCbQuery();
   setSession(ctx.from.id, { action: 'support_message' });
-  await ctx.reply('✉️ اكتب رسالتك أو استفسارك الآن ليتم إرساله مباشرة إلى الإدارة:');
+  await ctx.reply('✉️ اكتب رسالتك أو استفسارك الآن ليتم إرساله إلى الإدارة:');
 });
 
 bot.action('help', async (ctx) => {
   await ctx.answerCbQuery();
   await safeEdit(
     ctx,
-    'ℹ️ **دليل استخدام المنصة:**\n\n' +
-    '1️⃣ اضغط على (تصفح الأقسام والخدمات) لاستعراض كافة الأقسام الأربعة.\n' +
-    '2️⃣ في قسم التفعيل، اختر التطبيق ثم الدولة لتوليد الرقم واستلام الكود.\n' +
-    '3️⃣ في قسم الرشق، اختر المنصة والباقة وأرسل الرابط للتنفيذ.\n' +
-    '4️⃣ في قسم المصارف والمنتجات الرقمية، اختر نوع العملة أو التعاقد المطلوب.\n\n' +
-    `👑 بإشراف وإدارة: @${ADMIN_USERNAME}`,
-    Markup.inlineKeyboard([[Markup.button.callback('🔙 رجوع', 'home')]])
+    'ℹ️ تعليمات استخدام البوت\n\n' +
+    '1️⃣ اضغط على (تصفح الأقسام والخدمات) للوصول إلى أقسام التفعيل، الرشق، المصارفة، والمنتجات الرقمية.\n' +
+    '2️⃣ يمكنك ربح رصيد مجاني (0.05$ لكل دعوة) من قسم (ربح رصيد مجاني في البوت).\n' +
+    '3️⃣ جميع العمليات تتم بسرعة وأمان تام تحت إشراف الإدارة @' + ADMIN_USERNAME,
+    Markup.inlineKeyboard([[Markup.button.callback('🔙 العودة للواجهة الرئيسية', 'home')]])
   );
 });
 
-// ==================== 13. لوحة تحكم الإدارة الشاملة ====================
+// ==================== 15. لوحة تحكم الإدارة الشاملة ====================
 function adminKeyboard() {
-  const autoStatus = db.autoGenerateNumbers ? '🟢 التوليد الفوري للأرقام: مفعل' : '🔴 التوليد الفوري: متوقف (حسب المخزون)';
+  const autoStatus = db.autoGenerateNumbers
+    ? '🟢 توليد الأرقام الفوري: مفعل'
+    : '🔴 توليد الأرقام الفوري: متوقف (يظهر لا يوجد رقم)';
   return Markup.inlineKeyboard([
     [Markup.button.callback(autoStatus, 'admin_toggle_autogen')],
     [
@@ -1122,36 +1033,32 @@ function adminKeyboard() {
     ],
     [
       Markup.button.callback('💰 شحن أو خصم رصيد عميل', 'admin_balance'),
-      Markup.button.callback('📊 إحصائيات المنصة', 'admin_users')
+      Markup.button.callback('📊 إحصائيات البوت', 'admin_users')
     ],
-    [
-      Markup.button.callback('📦 إدارة العروض الإضافية', 'admin_products'),
-      Markup.button.callback('➕ إضافة عرض جديد', 'admin_addproduct')
-    ],
-    [Markup.button.callback('📢 إرسال إذاعة جماعية للكل', 'admin_broadcast')],
-    [Markup.button.callback('🔙 العودة لواجهة البوت', 'home')]
+    [Markup.button.callback('📢 إرسال إعلان جماعي للكل', 'admin_broadcast')],
+    [Markup.button.callback('🔙 العودة للواجهة الرئيسية', 'home')]
   ]);
 }
 
 bot.command('admin', (ctx) => {
   if (!isAdmin(ctx)) return ctx.reply('⛔ هذا القسم مخصص لإدارة البوت فقط.');
   clearSession(ctx.from.id);
-  return ctx.reply('🛠️ **لوحة تحكم الإدارة الشاملة:**', adminKeyboard());
+  return ctx.reply('🛠️ لوحة تحكم الإدارة الشاملة:', adminKeyboard());
 });
 
 bot.action('admin_home', async (ctx) => {
   await ctx.answerCbQuery();
   if (!isAdmin(ctx)) return;
   clearSession(ctx.from.id);
-  return safeEdit(ctx, '🛠️ **لوحة تحكم الإدارة الشاملة:**', adminKeyboard());
+  return safeEdit(ctx, '🛠️ لوحة تحكم الإدارة الشاملة:', adminKeyboard());
 });
 
 bot.action('admin_toggle_autogen', async (ctx) => {
   if (!isAdmin(ctx)) return;
   db.autoGenerateNumbers = !db.autoGenerateNumbers;
   saveDB();
-  await ctx.answerCbQuery(db.autoGenerateNumbers ? 'تم تفعيل توليد الأرقام الفوري لجميع الدول' : 'تم التحويل لوضع عدم التوفر إلا بالمخزون');
-  return safeEdit(ctx, '🛠️ **لوحة تحكم الإدارة الشاملة:**', adminKeyboard());
+  await ctx.answerCbQuery(db.autoGenerateNumbers ? 'تم تفعيل توليد الأرقام الفوري' : 'تم ضبط الوضع على: لا يوجد رقم متوفر حالياً');
+  return safeEdit(ctx, '🛠️ لوحة تحكم الإدارة الشاملة:', adminKeyboard());
 });
 
 bot.action('admin_topups', async (ctx) => {
@@ -1189,7 +1096,7 @@ bot.action(/^approve_topup_(\d+)$/, async (ctx) => {
   await ctx.reply(`✅ تم شحن ${money(topup.amount)}$ للعميل (${user.id}).`);
   await bot.telegram.sendMessage(
     user.id,
-    `🎉 **تم اعتماد شحن رصيدك بنجاح!**\n💵 المبلغ المضاف: ${money(topup.amount)}$\n💰 رصيدك الحالي: ${money(user.balance)}$`
+    `🎉 تم اعتماد شحن رصيدك بنجاح!\n💵 المبلغ المضاف: ${money(topup.amount)}$\n💰 رصيدك الحالي: ${money(user.balance)}$`
   ).catch(() => {});
 });
 
@@ -1202,7 +1109,7 @@ bot.action(/^reject_topup_(\d+)$/, async (ctx) => {
   topup.status = 'rejected';
   saveDB();
   await ctx.reply(`❌ تم رفض طلب الشحن #${topup.id}.`);
-  await bot.telegram.sendMessage(topup.userId, `❌ تم رفض طلب الشحن #${topup.id}. للاستفسار تواصل مع @${ADMIN_USERNAME}`).catch(() => {});
+  await bot.telegram.sendMessage(topup.userId, `❌ تم رفض طلب الشحن #${topup.id}. للاستفسار راسل @${ADMIN_USERNAME}`).catch(() => {});
 });
 
 bot.action('admin_orders', async (ctx) => {
@@ -1233,55 +1140,15 @@ bot.action(/^complete_order_(\d+)$/, async (ctx) => {
   await bot.telegram.sendMessage(order.userId, `✅ تم تنفيذ وإكمال طلبك رقم #${order.id} (${order.productName}).`).catch(() => {});
 });
 
-bot.action('admin_products', async (ctx) => {
-  await ctx.answerCbQuery();
-  if (!isAdmin(ctx)) return;
-  if (!db.products.length) return safeEdit(ctx, 'لا توجد عروض إضافية مخصصة حالياً.', adminKeyboard());
-
-  for (const p of db.products) {
-    await ctx.reply(
-      `📦 ${p.name}\n💵 السعر: ${money(p.price)}$\n📌 الحالة: ${p.active ? '🟢 مفعل' : '🔴 متوقف'}`,
-      Markup.inlineKeyboard([
-        [
-          Markup.button.callback(p.active ? '🔴 إيقاف' : '🟢 تفعيل', `toggle_${p.id}`),
-          Markup.button.callback('🗑️ حذف', `delprod_${p.id}`)
-        ]
-      ])
-    );
-  }
-});
-
-bot.action(/^delprod_(\d+)$/, async (ctx) => {
-  await ctx.answerCbQuery();
-  if (!isAdmin(ctx)) return;
-  db.products = db.products.filter(p => p.id !== Number(ctx.match[1]));
-  saveDB();
-  await ctx.reply('🗑️ تم حذف العرض بنجاح.');
-});
-
-bot.action(/^toggle_(\d+)$/, async (ctx) => {
-  await ctx.answerCbQuery();
-  if (!isAdmin(ctx)) return;
-  const p = db.products.find(x => x.id === Number(ctx.match[1]));
-  if (!p) return;
-  p.active = !p.active;
-  saveDB();
-  await ctx.reply(`✅ تم ${p.active ? 'تفعيل' : 'إيقاف'} العرض.`);
-});
-
-bot.action('admin_addproduct', async (ctx) => {
-  await ctx.answerCbQuery();
-  if (!isAdmin(ctx)) return;
-  setSession(ctx.from.id, { action: 'new_product_name' });
-  await ctx.reply('➕ أرسل اسم العرض أو المنتج الجديد:');
-});
-
 bot.action('admin_users', async (ctx) => {
   await ctx.answerCbQuery();
   if (!isAdmin(ctx)) return;
   await safeEdit(
     ctx,
-    `📊 **إحصائيات البوت الشاملة:**\n\n👥 المشتركون: ${Object.keys(db.users).length}\n🧾 إجمالي الطلبات: ${db.orders.length}\n💳 طلبات الشحن: ${db.topups.length}`,
+    `📊 إحصائيات البوت الشاملة\n\n` +
+    `👥 إجمالي المشتركين: ${Object.keys(db.users).length}\n` +
+    `🧾 إجمالي الطلبات: ${db.orders.length}\n` +
+    `💳 طلبات الشحن: ${db.topups.length}`,
     adminKeyboard()
   );
 });
@@ -1300,7 +1167,7 @@ bot.action('admin_broadcast', async (ctx) => {
   await ctx.reply('📢 أرسل نص الإعلان ليتم إرساله لجميع المشتركين في البوت:');
 });
 
-// ==================== 14. معالجة المدخلات النصية والأوامر ====================
+// ==================== 16. معالجة الرسائل النصية والأوامر ====================
 bot.command('deliver', async (ctx) => {
   if (!isAdmin(ctx)) return;
   const parts = ctx.message.text.split(' ');
@@ -1315,11 +1182,11 @@ bot.command('deliver', async (ctx) => {
   saveDB();
   await bot.telegram.sendMessage(
     order.userId,
-    `✅ **تم تنفيذ طلبك رقم #${order.id} بنجاح!**\n` +
+    `✅ تم تنفيذ طلبك رقم #${order.id} بنجاح!\n` +
     `📦 الخدمة: ${order.productName}\n\n` +
-    ` 🔐 **الكود / بيانات التسليم:**\n\`${msg}\``
+    `🔐 الكود / بيانات التسليم:\n${msg}`
   ).catch(() => {});
-  return ctx.reply(`✅ تم إرسال الكود وإكمال الطلب #${order.id}.`);
+  return ctx.reply(`✅ تم إرسال التسليم وإكمال الطلب #${order.id}.`);
 });
 
 bot.on('text', async (ctx, next) => {
@@ -1329,7 +1196,6 @@ bot.on('text', async (ctx, next) => {
 
   if (!session || text.startsWith('/')) return next();
 
-  // إتمام طلب رشق بعد إرسال الرابط
   if (session.action === 'smm_link') {
     const user = getUser(ctx);
     if (user.balance < session.price) {
@@ -1352,15 +1218,15 @@ bot.on('text', async (ctx, next) => {
     clearSession(userId);
 
     await ctx.reply(
-      `🎉 **تم تسجيل طلب الرشق بنجاح (#${order.id})!**\n\n` +
-      `📦 الباقة: ${session.srvName}\n` +
+      `🎉 تم تسجيل طلب الرشق بنجاح (#${order.id})!\n\n` +
+      `📦 الخدمة: ${session.srvName}\n` +
       `🔗 الرابط: ${text}\n` +
       `💰 رصيدك المتبقي: ${money(user.balance)}$\n\n` +
-      `⚡ بدأ التنفيذ وسيصلك إشعار عند الاكتمال.`
+      `⚡ جاري التنفيذ وسيصلك إشعار فور الاكتمال.`
     );
 
     return notifyAdmin(
-      `🚀 **طلب رشق جديد (#${order.id})**\n\n` +
+      `🚀 طلب رشق جديد (#${order.id})\n` +
       `📦 الخدمة: ${session.srvName} (${session.platName})\n` +
       `🔗 الرابط: ${text}\n` +
       `💵 المبلغ: ${money(session.price)}$\n` +
@@ -1369,68 +1235,36 @@ bot.on('text', async (ctx, next) => {
     );
   }
 
-  // طلب تحويل أو مصارفة عملات
   if (session.action === 'exchange_request') {
     clearSession(userId);
     await notifyAdmin(
-      `🏦 **طلب مصارفة وتحويل عملات**\n\n` +
-      `📌 القسم: ${session.currencyName}\n` +
+      `🏦 طلب مصارفة وتحويل عملات\n\n` +
+      `📌 العملة: ${session.currencyName}\n` +
       `👤 العميل: ${ctx.from.first_name || ''} (@${ctx.from.username || 'بدون_معرف'})\n` +
       `🆔 رقم الحساب: ${userId}\n\n` +
-      `📝 التفاصيل المرسلة:\n${text}`
+      `📝 التفاصيل:\n${text}`
     );
-    return ctx.reply(`✅ تم إرسال طلب المصارفة والتحويل إلى الإدارة (@${ADMIN_USERNAME}) بنجاح، سيتم التواصل معك فوراً.`);
+    return ctx.reply(`✅ تم إرسال طلبك إلى الإدارة (@${ADMIN_USERNAME}) بنجاح، سيتم الرد عليك فوراً.`);
   }
 
-  // عرض بيع منتج رقمي أو تعاقد
   if (session.action === 'sell_digital_offer') {
     clearSession(userId);
     await notifyAdmin(
-      `💰 **عرض بيع منتج رقمي / تعاقد جديد**\n\n` +
-      `📌 الفئة: ${session.categoryName}\n` +
+      `💰 عرض بيع منتج رقمي / تعاقد\n\n` +
+      `📌 القسم: ${session.categoryName}\n` +
       `👤 المرسل: ${ctx.from.first_name || ''} (@${ctx.from.username || 'بدون_معرف'})\n` +
       `🆔 رقم الحساب: ${userId}\n\n` +
-      `📝 تفاصيل العرض:\n${text}`
+      `📝 التفاصيل:\n${text}`
     );
-    return ctx.reply(`✅ تم استلام عرضك وإحالته إلى الإدارة (@${ADMIN_USERNAME}) للمراجعة والتعاقد.`);
+    return ctx.reply(`✅ تم إرسال عرضك إلى الإدارة (@${ADMIN_USERNAME}) للمراجعة والتعاقد.`);
   }
 
-  // رسائل الدعم الفني
   if (session.action === 'support_message') {
     clearSession(userId);
-    await notifyAdmin(`📩 **رسالة دعم فني جديدة**\nمن: ${ctx.from.first_name || ''} (@${ctx.from.username || ''})\nID: ${userId}\n\nالرسالة:\n${text}`);
+    await notifyAdmin(`📩 رسالة دعم فني\nمن: ${ctx.from.first_name || ''} (@${ctx.from.username || ''})\nID: ${userId}\n\nالرسالة:\n${text}`);
     return ctx.reply('✅ تم إرسال رسالتك إلى الإدارة بنجاح.');
   }
 
-  // إضافة منتج إضافي من المدير
-  if (session.action === 'new_product_name') {
-    setSession(userId, { action: 'new_product_desc', name: text });
-    return ctx.reply('📝 أرسل وصف وتفاصيل العرض:');
-  }
-
-  if (session.action === 'new_product_desc') {
-    setSession(userId, { action: 'new_product_price', name: session.name, description: text });
-    return ctx.reply('💵 أرسل السعر بالدولار (أرقام فقط، مثال: 2.5):');
-  }
-
-  if (session.action === 'new_product_price') {
-    if (!validAmount(text)) return ctx.reply('⚠️ أرسل رقماً صحيحاً أكبر من صفر:');
-    const product = {
-      id: db.nextProductId++,
-      name: session.name,
-      description: session.description,
-      price: Number(text),
-      deliveryType: 'manual',
-      stock: [],
-      active: true
-    };
-    db.products.push(product);
-    saveDB();
-    clearSession(userId);
-    return ctx.reply(`✅ تمت إضافة (${product.name}) بسعر ${money(product.price)}$ بنجاح!`, adminKeyboard());
-  }
-
-  // طلب شحن الرصيد
   if (session.action === 'topup_amount') {
     if (!validAmount(text)) return ctx.reply('⚠️ أرسل مبلغاً صحيحاً بالأرقام (مثال: 10):');
     const topup = { id: db.nextTopupId++, userId, amount: Number(text), status: 'pending' };
@@ -1440,7 +1274,7 @@ bot.on('text', async (ctx, next) => {
 
     await ctx.reply(`✅ تم تسجيل طلب الشحن (#${topup.id}) بمبلغ ${money(topup.amount)}$.\nيرجى مراسلة الإدارة @${ADMIN_USERNAME} لتأكيد الدفع.`);
     return notifyAdmin(
-      `💳 **طلب شحن رصيد جديد #${topup.id}**\n👤 العميل: ${ctx.from.first_name || ''} (${userId})\n💵 المبلغ: ${money(topup.amount)}$`,
+      `💳 طلب شحن رصيد جديد #${topup.id}\n👤 العميل: ${ctx.from.first_name || ''} (${userId})\n💵 المبلغ: ${money(topup.amount)}$`,
       Markup.inlineKeyboard([
         [
           Markup.button.callback('✅ موافقة وشحن', `approve_topup_${topup.id}`),
@@ -1450,10 +1284,9 @@ bot.on('text', async (ctx, next) => {
     );
   }
 
-  // تعديل رصيد عميل
   if (session.action === 'balance_user') {
     if (!db.users[text]) {
-      db.users[text] = { id: text, name: 'عميل', username: '', balance: 0, createdAt: new Date().toISOString() };
+      db.users[text] = { id: text, name: 'عميل', username: '', balance: 0, invitedCount: 0, referralEarnings: 0, createdAt: new Date().toISOString() };
     }
     setSession(userId, { action: 'balance_amount', targetUser: text });
     return ctx.reply(`💰 الرصيد الحالي للعميل (${text}): ${money(db.users[text].balance)}$\nأرسل المبلغ المراد إضافته (أو بالسالب للخصم مثل -5):`);
@@ -1473,13 +1306,12 @@ bot.on('text', async (ctx, next) => {
     return;
   }
 
-  // الإذاعة الجماعية
   if (session.action === 'broadcast') {
     clearSession(userId);
     let sent = 0;
     for (const id of Object.keys(db.users)) {
       try {
-        await bot.telegram.sendMessage(id, `📢 **إعلان من الإدارة:**\n\n${text}`);
+        await bot.telegram.sendMessage(id, `📢 إعلان من الإدارة:\n\n${text}`);
         sent++;
       } catch (_) {}
     }
@@ -1489,15 +1321,14 @@ bot.on('text', async (ctx, next) => {
 
 bot.catch((err) => console.error('Bot error:', err.message));
 
-// ==================== 15. التشغيل الذكي المقاوم لتعارض الجلسات ====================
+// ==================== 17. التشغيل الذكي المقاوم لتعارض الجلسات ====================
 function startBotWithRetry() {
   bot.telegram.setMyCommands([
-    { command: 'start', description: '🚀 القائمة الرئيسية وتصفح الأقسام' },
-    { command: 'admin', description: '🛠️ لوحة تحكم الإدارة' }
+    { command: 'start', description: '🚀 البداية والواجهة الرئيسية' }
   ]).catch(() => {});
 
   bot.launch({ dropPendingUpdates: true })
-    .then(() => console.log('✅ Shamel Bot launched successfully with Multi-Level Menus!'))
+    .then(() => console.log('✅ Shamel Bot V2 launched successfully!'))
     .catch((err) => {
       console.error('⚠️ إعادة محاولة الاتصال بعد 5 ثوانٍ:', err.message);
       setTimeout(startBotWithRetry, 5000);
